@@ -25,6 +25,11 @@ const routes = [
     path: '/4',
     name: 'threeTest4',
     component: () => import('../views/threeTest4.vue')
+  },
+  {
+    path: '/5',
+    name: 'threeTest5',
+    component: () => import('../views/threeTest5.vue')
   }
 ]
 

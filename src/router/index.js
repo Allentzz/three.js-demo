@@ -33,8 +33,8 @@ const routes = [
   },
   {
     path: '/6',
-    name: 'threeTest6',
-    component: () => import('../views/threeTest6.vue')
+    name: 'Scene',
+    component: () => import('../views/scene/index.vue')
   },
 ]
 

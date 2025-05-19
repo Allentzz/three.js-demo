@@ -28,39 +28,53 @@
   const handleKeyDown = (event) => {
     switch(event.key.toLowerCase()) {
       case 'a': // 左转
-        params.rotation -= params.rotationSpeed;
-        if (movablePart) {
-          movablePart.rotation.y = THREE.MathUtils.degToRad(params.rotation);
-        }
-        break;
-      case 'd': // 右转
         params.rotation += params.rotationSpeed;
         if (movablePart) {
           movablePart.rotation.y = THREE.MathUtils.degToRad(params.rotation);
         }
+        towerRotationController.setValue(params.rotation);
+        break;
+      case 'd': // 右转
+        params.rotation -= params.rotationSpeed;
+        if (movablePart) {
+          movablePart.rotation.y = THREE.MathUtils.degToRad(params.rotation);
+          towerRotationController.setValue(params.rotation);
+        }
         break;
       case 'q': // 吊钩向前
         params.hookZ += params.hookSpeed;
+        // 添加限制
+        if (params.hookZ > 8) params.hookZ = 8;
         if (hookGroup) {
           hookGroup.position.z = params.hookZ;
+          hookZController.setValue(params.hookZ);
         }
         break;
       case 'e': // 吊钩向后
         params.hookZ -= params.hookSpeed;
+        // 添加限制
+        if (params.hookZ < -6) params.hookZ = -6;
         if (hookGroup) {
           hookGroup.position.z = params.hookZ;
+          hookZController.setValue(params.hookZ);
         }
         break;
       case 'w': // 吊钩上升
         params.hookY += params.hookSpeed;
+        // 添加限制
+        if (params.hookY > 5.6) params.hookY = 5.6;
         if (hookY) {
           hookY.position.y = params.hookY;
+          hookYController.setValue(params.hookY);
         }
         break;
       case 's': // 吊钩下降
         params.hookY -= params.hookSpeed;
+        // 添加限制
+        if (params.hookY < 0) params.hookY = 0;
         if (hookY) {
           hookY.position.y = params.hookY;
+          hookYController.setValue(params.hookY);
         }
         break;
     }
@@ -69,7 +83,7 @@
 
   // 初始化地面
   const initPlane = () => {
-    const planeSize = 20;
+    const planeSize = 30;
     const loader = new THREE.TextureLoader();
     const texture = loader.load('img/checker.png');
     texture.wrapS = THREE.RepeatWrapping;
@@ -106,7 +120,7 @@
     const near = 0.1;  // 近裁剪面
     const far = 3000;   // 远裁剪面
     camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    camera.position.set(30, 30, 30);  // 设置相机位置
+    camera.position.set(11.5, 14, -1);  // 设置相机位置
     camera.lookAt(0, 0, 0);  // 相机看向原点
   }
 
@@ -122,13 +136,6 @@
       cube.position.set(0, 7, 0);
       cube.scale.set(0.01, 0.01, 0.01);
 
-      
-
-      // cabine_cabine_0,haut-gris_haut-gris_0,corps-top_corps-top_0,plateforme_plateforme_0,plateforme-haut_plateforme-haut_0,cables-haut_cable-haut_0,corps-top_corps-top_0,haut-jaune_haut-jaune_0,corps-haut-1_corps-haut-1_0,corps-haut-2_corps-haut-1_0,corps-haut-3_corps-haut-3_0,attaches-haut_attaches-haut_0
-
-      // includes('beton-haut','grue-barrieres')
-
-      // poulie_poulie_0,Cylinder222_poulis-support_0,Cylinder222_poulis-support_0
 
     // 创建一个组来存储需要移动的部件
       movablePart = new THREE.Group();
@@ -147,7 +154,6 @@
         'plateforme_plateforme_0',
         'plateforme-haut_plateforme-haut_0',
         'cables-haut_cable-haut_0',
-        'corps-top_corps-top_0',
         'haut-jaune_haut-jaune_0',
         'corps-haut-1_corps-haut-1_0',
         'corps-haut-2_corps-haut-1_0',
@@ -170,6 +176,7 @@
         if (
           (targetMeshes.includes(child.name) ||
           gouArr.includes(child.name) ||
+          gouY.includes(child.name) ||
           child.name == 'grue-barriere-support_grue-barrieres-support_0' ||
           child.name.includes('beton-haut') ||
           child.name.includes('grue-barrieres')) && 
@@ -223,6 +230,7 @@
       // 将组的位置设置为中心点
       movablePart.position.copy(center);
 
+      initGUI();
     
 
     window.addEventListener('keydown', handleKeyDown);
@@ -237,20 +245,56 @@
       console.error('模型加载错误:', error);
     }
   );
-
-    // const geometry = new THREE.BoxGeometry(1, 1, 1);
-    // const material = new THREE.MeshPhongMaterial({color: "green"}); // 使用 MeshPhongMaterial 以支持光照
-    // cube = new THREE.Mesh(geometry, material);
-    // scene.add(cube);
-
+    
     // 添加定向光以照亮场景
     const light = new THREE.DirectionalLight(0xffffff, 2);
     light.position.set(1, 1, 1);
     scene.add(light);
 
     // 添加环境光以提供基础照明
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
+  }
+
+  let towerRotationController, hookZController, hookYController;
+
+  const initGUI = () => {
+    gui = new GUI();
+
+    // const cameraFolder = gui.addFolder('相机控制');
+    // cameraFolder.add(camera.position, 'x', -100, 100, 0.1).name('相机X');
+    // cameraFolder.add(camera.position, 'y', -100, 100, 0.1).name('相机Y'); 
+    // cameraFolder.add(camera.position, 'z', -100, 100, 0.1).name('相机Z');
+    // cameraFolder.open();
+
+    // 添加旋转控制
+    const rotationFolder = gui.addFolder('旋转控制');
+    towerRotationController = rotationFolder.add(movablePart.rotation, 'y', 0, Math.PI * 2, 0.1)
+      .name('塔身旋转')
+      .onChange((value) => {
+        movablePart.rotation.y = value
+      });
+
+    // 大臂移动 
+    const hookFolder = gui.addFolder('大臂移动');
+    hookZController = hookZController = hookFolder.add(hookGroup.position, 'z', -6, 8, 1)
+      .name('大臂横向移动')
+      .onChange((value) => {
+        hookGroup.position.z = value;
+      });;
+
+    // 添加高度控制
+    const heightFolder = gui.addFolder('高度控制');
+    hookYController = heightFolder.add(params, 'hookY', 0, 5.6, 0.1)
+      .name('吊钩高度')
+      .onChange((value) => {
+        hookY.position.set(0, value, 0);
+      });
+
+    // 展开所有文件夹
+    rotationFolder.open();
+    hookFolder.open();
+    heightFolder.open();
   }
 
   // 初始化渲染器
@@ -297,7 +341,6 @@
     initRenderer();
     animate();
     initControls();
-
     window.addEventListener('resize', onWindowResize);
   }
 
@@ -310,6 +353,9 @@
     window.removeEventListener('resize', onWindowResize);
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
+    }
+    if (gui) {
+      gui.destroy();
     }
     // 释放资源
     if (scene) {
